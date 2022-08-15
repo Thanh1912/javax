@@ -1,0 +1,36 @@
+// Create variables with empty default values
+ext["ossrhUsername"] = ''
+ext["ossrhPassword"] = ''
+ext["sonatypeStagingProfileId"] = ''
+ext["signing.keyId"] = ''
+ext["signing.password"] = ''
+ext["signing.key"] = ''
+ext["snapshot"] = ''
+
+File secretPropsFile = project.rootProject.file('local.properties')
+if (secretPropsFile.exists()) {
+    // Read local.properties file first if it exists
+    Properties p = new Properties()
+    new FileInputStream(secretPropsFile).withCloseable { is -> p.load(is) }
+    p.each { name, value -> ext[name] = value }
+}
+
+if (snapshot) {
+    ext["rootVersionName"] = Configuration.snapshotVersionName
+} else {
+    ext["rootVersionName"] = Configuration.versionName
+}
+
+// Set up Sonatype repository
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"))
+            stagingProfileId = sonatypeStagingProfileId
+            username = ossrhUsername
+            password = ossrhPassword
+            version = rootVersionName
+        }
+    }
+}
